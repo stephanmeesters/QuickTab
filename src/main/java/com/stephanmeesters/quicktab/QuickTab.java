@@ -33,6 +33,7 @@ public class QuickTab extends AnAction {
     private VirtualFile currentFile;
     private Project project;
     private static final int padding = 30;
+    private static final int maxTabs = 30;
 
     @Override
     public @NotNull ActionUpdateThread getActionUpdateThread() {
@@ -82,11 +83,11 @@ public class QuickTab extends AnAction {
         list.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                char keyChar = Character.toLowerCase(e.getKeyChar());
+                char keyChar = convertKeyEventToNonShiftKeyChar(e);
                 int index = getIndexForValue(keyChar);
-                if (index >= 0 && index < Math.min(openFiles.length, 31)) {
+                if (index >= 0 && index < Math.min(openFiles.length, maxTabs)) {
                     if (project != null) {
-                        if (e.isControlDown()) {
+                        if (e.isShiftDown()) {
                             FileEditorManager.getInstance(project).closeFile(openFiles[index]);
                             popup.dispose();
                             if (openFiles.length - 1 >= 2) {
@@ -99,8 +100,11 @@ public class QuickTab extends AnAction {
                         }
                     }
                 }
-                else if(e.getKeyCode() != KeyEvent.VK_CONTROL)
+                if(keyChar == 'x' && e.isShiftDown())
                 {
+                    for (VirtualFile file : openFiles) {
+                        FileEditorManager.getInstance(project).closeFile(file);
+                    }
                     popup.dispose();
                 }
             }
@@ -126,7 +130,7 @@ public class QuickTab extends AnAction {
 
         currentFile = fileEditorManager.getSelectedFiles()[0];
 
-        for (int i = 0; i < Math.min(openFiles.length, 31); i++) {
+        for (int i = 0; i < Math.min(openFiles.length, maxTabs); i++) {
             String name = openFiles[i].getName();
             if (nameCount.get(name) > 1) {
                 name = openFiles[i].getPath();
@@ -202,6 +206,30 @@ public class QuickTab extends AnAction {
         AffineTransform at = gc.getDefaultTransform();
         double scaleX = at.getScaleX();
         return (int)(value * scaleX);
+    }
+
+    private static char convertKeyEventToNonShiftKeyChar(KeyEvent e)
+    {
+        int keyCode = e.getKeyCode();
+        char keyChar;
+        if (e.isShiftDown()) {
+            keyChar = switch (keyCode) {
+                case KeyEvent.VK_1 -> '1';
+                case KeyEvent.VK_2 -> '2';
+                case KeyEvent.VK_3 -> '3';
+                case KeyEvent.VK_4 -> '4';
+                case KeyEvent.VK_5 -> '5';
+                case KeyEvent.VK_6 -> '6';
+                case KeyEvent.VK_7 -> '7';
+                case KeyEvent.VK_8 -> '8';
+                case KeyEvent.VK_9 -> '9';
+                case KeyEvent.VK_0 -> '0';
+                default -> Character.toLowerCase(e.getKeyChar());
+            };
+        } else {
+            keyChar = Character.toLowerCase(e.getKeyChar());
+        }
+        return keyChar;
     }
 
 }
