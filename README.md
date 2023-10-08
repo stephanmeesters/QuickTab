@@ -1,4 +1,6 @@
 ## QuickTab
+[JetBrains Marketplace page](https://plugins.jetbrains.com/plugin/22849-quicktab)
+
 A simple IntelliJ plugin for switching between tabs using your keyboard.
 
 - Press alt + a to start the plugin.
