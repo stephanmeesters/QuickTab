@@ -1,6 +1,5 @@
 package com.stephanmeesters.quicktab;
 
-import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.fileEditor.FileEditorManager;
@@ -34,11 +33,6 @@ public class QuickTab extends AnAction {
     private Project project;
     private static final int padding = 30;
     private static final int maxTabs = 30;
-
-    @Override
-    public @NotNull ActionUpdateThread getActionUpdateThread() {
-        return ActionUpdateThread.BGT;
-    }
 
     public QuickTab() {
         super();
@@ -74,7 +68,7 @@ public class QuickTab extends AnAction {
         list.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
                 int index = list.locationToIndex(evt.getPoint());
-                if(project != null)
+                if(project != null && openFiles[index] != null)
                     FileEditorManager.getInstance(project).openFile(openFiles[index], true);
                 popup.dispose();
             }
@@ -86,7 +80,7 @@ public class QuickTab extends AnAction {
                 char keyChar = convertKeyEventToNonShiftKeyChar(e);
                 int index = getIndexForValue(keyChar);
                 if (index >= 0 && index < Math.min(openFiles.length, maxTabs)) {
-                    if (project != null) {
+                    if (project != null && openFiles[index] != null) {
                         if (e.isShiftDown()) {
                             FileEditorManager.getInstance(project).closeFile(openFiles[index]);
                             popup.dispose();
@@ -151,8 +145,17 @@ public class QuickTab extends AnAction {
         if (project == null)
             return;
 
-        Init();
-        RefreshContents();
+        try
+        {
+            Init();
+            RefreshContents();
+        }
+        catch (Exception ex) {
+            if(popup != null)
+            {
+                popup.dispose();
+            }
+        }
     }
 
     @Override
@@ -208,28 +211,49 @@ public class QuickTab extends AnAction {
         return (int)(value * scaleX);
     }
 
-    private static char convertKeyEventToNonShiftKeyChar(KeyEvent e)
-    {
+    private static char convertKeyEventToNonShiftKeyChar(KeyEvent e) {
         int keyCode = e.getKeyCode();
         char keyChar;
+
         if (e.isShiftDown()) {
-            keyChar = switch (keyCode) {
-                case KeyEvent.VK_1 -> '1';
-                case KeyEvent.VK_2 -> '2';
-                case KeyEvent.VK_3 -> '3';
-                case KeyEvent.VK_4 -> '4';
-                case KeyEvent.VK_5 -> '5';
-                case KeyEvent.VK_6 -> '6';
-                case KeyEvent.VK_7 -> '7';
-                case KeyEvent.VK_8 -> '8';
-                case KeyEvent.VK_9 -> '9';
-                case KeyEvent.VK_0 -> '0';
-                default -> Character.toLowerCase(e.getKeyChar());
-            };
+            switch (keyCode) {
+                case KeyEvent.VK_1:
+                    keyChar = '1';
+                    break;
+                case KeyEvent.VK_2:
+                    keyChar = '2';
+                    break;
+                case KeyEvent.VK_3:
+                    keyChar = '3';
+                    break;
+                case KeyEvent.VK_4:
+                    keyChar = '4';
+                    break;
+                case KeyEvent.VK_5:
+                    keyChar = '5';
+                    break;
+                case KeyEvent.VK_6:
+                    keyChar = '6';
+                    break;
+                case KeyEvent.VK_7:
+                    keyChar = '7';
+                    break;
+                case KeyEvent.VK_8:
+                    keyChar = '8';
+                    break;
+                case KeyEvent.VK_9:
+                    keyChar = '9';
+                    break;
+                case KeyEvent.VK_0:
+                    keyChar = '0';
+                    break;
+                default:
+                    keyChar = Character.toLowerCase(e.getKeyChar());
+                    break;
+            }
         } else {
             keyChar = Character.toLowerCase(e.getKeyChar());
         }
         return keyChar;
     }
-
 }
