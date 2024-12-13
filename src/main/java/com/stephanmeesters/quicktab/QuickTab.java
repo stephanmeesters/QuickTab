@@ -10,6 +10,7 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBList;
+import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,7 +53,7 @@ public class QuickTab extends AnAction {
             if (openFiles[index].equals(currentFile)) {
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
             }
-            label.setBorder(BorderFactory.createEmptyBorder(0, convertDPI(padding), 0, 0));
+            label.setBorder(BorderFactory.createEmptyBorder(0, JBUI.scale(padding), 0, JBUI.scale(padding)));
             return label;
         });
 
@@ -132,7 +133,9 @@ public class QuickTab extends AnAction {
             model.addElement(getValueAtIndex(i) + ".   " + name);
         }
 
-        list.setPreferredSize(new Dimension(calculateWidth(), model.getSize() * convertDPI(20)));
+        Dimension ldim = list.getSize();
+        popup.setSize(new Dimension(ldim.width + 4*JBUI.scale(padding), ldim.height + 2*JBUI.scale(padding)));
+        //list.setPreferredSize(new Dimension(calculateWidth(), model.getSize() * convertDPI(20)));
 
         popup.showInFocusCenter();
         list.hasFocus();
@@ -185,21 +188,6 @@ public class QuickTab extends AnAction {
         }
     }
 
-    private int calculateWidth()
-    {
-        int maxWidth = 0;
-        FontMetrics fm = list.getFontMetrics(list.getFont());
-        for (int i = 0; i < model.size(); i++) {
-            String item = model.get(i);
-            int width = fm.stringWidth(item);
-            if (width > maxWidth) {
-                maxWidth = width;
-            }
-        }
-
-        return maxWidth + 2*convertDPI(padding);
-    }
-
     private int convertDPI(int value)
     {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
@@ -207,7 +195,7 @@ public class QuickTab extends AnAction {
         GraphicsConfiguration gc = defaultScreen.getDefaultConfiguration();
 
         AffineTransform at = gc.getDefaultTransform();
-        double scaleX = at.getScaleX();
+        double scaleX = (double)JBUI.scale((float)at.getScaleX());
         return (int)(value * scaleX);
     }
 
