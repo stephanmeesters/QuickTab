@@ -4,13 +4,15 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx;
+import com.intellij.openapi.fileEditor.impl.EditorWindow;
 import com.intellij.openapi.fileEditor.impl.EditorsSplitters;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.ComponentUtil;
 import com.intellij.ui.components.JBList;
-import com.intellij.util.ui.JBUI;
+import com.intellij.ui.scale.JBUIScale;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,7 +22,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.geom.AffineTransform;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ public class QuickTab extends AnAction {
     private VirtualFile currentFile;
     private Project project;
     private static final int padding = 30;
+    private static final int quarterPadding = 8;
     private static final int maxTabs = 30;
 
     public QuickTab() {
@@ -53,15 +55,19 @@ public class QuickTab extends AnAction {
             if (openFiles[index].equals(currentFile)) {
                 label.setFont(label.getFont().deriveFont(Font.BOLD));
             }
-            label.setBorder(BorderFactory.createEmptyBorder(0, JBUI.scale(padding), 0, JBUI.scale(padding)));
+            label.setBorder(BorderFactory.createEmptyBorder(
+                    index == 0 ? JBUIScale.scale(quarterPadding) : 0,
+                    JBUIScale.scale(padding),
+                    index == openFiles.length - 1 ? JBUIScale.scale(quarterPadding) : 0,
+                    JBUIScale.scale(padding)));
             return label;
         });
 
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         popup = JBPopupFactory.getInstance()
-                .createComponentPopupBuilder(list, list)  // Passing list instead of scrollPane
-                .setTitle("Open Tabs")
+                .createComponentPopupBuilder(list, list)
+                .setTitle("Switch Tab")
                 .setFocusable(true)
                 .setRequestFocus(true)
                 .createPopup();
@@ -97,6 +103,8 @@ public class QuickTab extends AnAction {
                 }
                 if(keyChar == 'x' && e.isShiftDown())
                 {
+                    if(project == null)
+                        return;
                     for (VirtualFile file : openFiles) {
                         FileEditorManager.getInstance(project).closeFile(file);
                     }
@@ -106,6 +114,7 @@ public class QuickTab extends AnAction {
         });
     }
 
+    @SuppressWarnings("deprecation")
     private void RefreshContents()
     {
         FileEditorManager fileEditorManager = FileEditorManager.getInstance(project);
@@ -113,7 +122,12 @@ public class QuickTab extends AnAction {
         EditorsSplitters splitters = fileEditorManagerEx.getSplitters();
 
         // Get open files in the active tab group
-        openFiles = splitters.getCurrentWindow().getFiles();
+        EditorWindow editorWindow = splitters.getCurrentWindow();
+        if(editorWindow == null)
+            return;
+
+        openFiles = editorWindow.getFiles();
+        //openFiles = editorWindow.getFileList().toArray(new VirtualFile[0]);
         if(openFiles.length <= 1)
             return;
 
@@ -133,12 +147,8 @@ public class QuickTab extends AnAction {
             model.addElement(getValueAtIndex(i) + ".   " + name);
         }
 
-        Dimension ldim = list.getSize();
-        popup.setSize(new Dimension(ldim.width + 4*JBUI.scale(padding), ldim.height + 2*JBUI.scale(padding)));
-        //list.setPreferredSize(new Dimension(calculateWidth(), model.getSize() * convertDPI(20)));
-
-        popup.showInFocusCenter();
-        list.hasFocus();
+        Component cc = ComponentUtil.findUltimateParent(editorWindow.getOwner());
+        popup.showInCenterOf(cc);
     }
 
     @Override
@@ -186,17 +196,6 @@ public class QuickTab extends AnAction {
         } else {
             return -1;  // Invalid input
         }
-    }
-
-    private int convertDPI(int value)
-    {
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice defaultScreen = ge.getDefaultScreenDevice();
-        GraphicsConfiguration gc = defaultScreen.getDefaultConfiguration();
-
-        AffineTransform at = gc.getDefaultTransform();
-        double scaleX = (double)JBUI.scale((float)at.getScaleX());
-        return (int)(value * scaleX);
     }
 
     private static char convertKeyEventToNonShiftKeyChar(KeyEvent e) {
